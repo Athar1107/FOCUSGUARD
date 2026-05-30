@@ -1,0 +1,24 @@
+# Virtual environment
+venv/
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+
+# User data (generated at runtime, never committed)
+*.db
+*.log
+reports/
+
+# Config overrides (user's live config lives in %APPDATA%, not here)
+# Keep the default config.json in the repo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# PyInstaller output
+dist/
+build/
+*.spec
