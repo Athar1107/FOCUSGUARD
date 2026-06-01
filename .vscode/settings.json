@@ -1,0 +1,27 @@
+{
+  "python.analysis.exclude": [
+    "**/venv",
+    "**/__pycache__",
+    "c:/__pyrefly_virtual__/**",
+    "C:/__pyrefly_virtual__/**",
+    "**/__pyrefly_virtual__/**"
+  ],
+  "python.analysis.ignore": [
+    "**/venv",
+    "**/__pycache__",
+    "c:/__pyrefly_virtual__/**",
+    "C:/__pyrefly_virtual__/**",
+    "**/__pyrefly_virtual__/**"
+  ],
+  "search.exclude": {
+    "**/venv": true,
+    "**/__pycache__": true,
+    "**/assets": true,
+    "c:/__pyrefly_virtual__": true,
+    "C:/__pyrefly_virtual__": true
+  },
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/.git": true
+  }
+}

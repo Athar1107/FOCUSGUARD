@@ -3,21 +3,20 @@ tray_controller.py
 ------------------
 System tray icon and menu using pystray.
 
-Menu items (Phase 1):
+Menu items:
   • FocusGuard — Status: Running  (disabled label)
+  • ─────────────────────────────
+  • Open Today's Digest
+  • Open Application Log
   • ─────────────────────────────
   • Webcam: ON  /  Webcam: OFF    (toggle)
   • ─────────────────────────────
   • Quit
-
-The tray icon is a simple coloured square generated with Pillow at runtime
-so no external image files are required for Phase 1.
 """
 
 from __future__ import annotations
 
 import logging
-import threading
 from typing import Callable, Optional
 
 import pystray
@@ -27,14 +26,13 @@ logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Icon generation (runtime — no PNG files needed in Phase 1)
+# Icon generation (runtime — no PNG files needed)
 # ---------------------------------------------------------------------------
 
 def _make_icon(color: str = "#4CAF50", size: int = 64) -> Image.Image:
     """Generate a simple square icon with a rounded feel."""
     img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    # Filled circle
     margin = 4
     draw.ellipse(
         [margin, margin, size - margin, size - margin],
@@ -43,9 +41,9 @@ def _make_icon(color: str = "#4CAF50", size: int = 64) -> Image.Image:
     return img
 
 
-_ICON_ACTIVE = _make_icon("#4CAF50")   # green  — running normally
+_ICON_ACTIVE = _make_icon("#4CAF50")      # green  — running normally
 _ICON_WEBCAM_OFF = _make_icon("#FF9800")  # amber  — webcam toggled off
-_ICON_ERROR = _make_icon("#F44336")    # red    — webcam unavailable
+_ICON_ERROR = _make_icon("#F44336")       # red    — webcam unavailable
 
 
 # ---------------------------------------------------------------------------
@@ -63,10 +61,14 @@ class TrayController:
         config: dict,
         on_webcam_toggle: Callable[[bool], None],
         on_quit: Callable[[], None],
+        on_open_digest: Optional[Callable[[], None]] = None,
+        on_open_log: Optional[Callable[[], None]] = None,
     ) -> None:
         self._config = config
         self._on_webcam_toggle = on_webcam_toggle
         self._on_quit = on_quit
+        self._on_open_digest = on_open_digest
+        self._on_open_log = on_open_log
 
         self._webcam_enabled: bool = config.get("webcam_enabled", True)
         self._has_error: bool = False
@@ -119,12 +121,28 @@ class TrayController:
     # ------------------------------------------------------------------
 
     def _build_menu(self) -> pystray.Menu:
-        return pystray.Menu(
+        items = [
             pystray.MenuItem(
                 lambda item: f"FocusGuard — {self._status_text}",
                 action=None,
                 enabled=False,
             ),
+            pystray.Menu.SEPARATOR,
+        ]
+
+        # Add "Open Today's Digest" if provided
+        if self._on_open_digest is not None:
+            items.append(
+                pystray.MenuItem("Open Today's Digest", action=self._handle_open_digest)
+            )
+
+        # Add "Open Application Log" if provided
+        if self._on_open_log is not None:
+            items.append(
+                pystray.MenuItem("Open Application Log", action=self._handle_open_log)
+            )
+
+        items.extend([
             pystray.Menu.SEPARATOR,
             pystray.MenuItem(
                 lambda item: (
@@ -134,11 +152,23 @@ class TrayController:
             ),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("Quit", action=self._handle_quit),
-        )
+        ])
+
+        return pystray.Menu(*items)
 
     # ------------------------------------------------------------------
     # Menu handlers
     # ------------------------------------------------------------------
+
+    def _handle_open_digest(self, icon, item) -> None:
+        if self._on_open_digest:
+            logger.info("Open digest requested from tray")
+            self._on_open_digest()
+
+    def _handle_open_log(self, icon, item) -> None:
+        if self._on_open_log:
+            logger.info("Open application log requested from tray")
+            self._on_open_log()
 
     def _handle_webcam_toggle(self, icon, item) -> None:
         self._webcam_enabled = not self._webcam_enabled
@@ -172,5 +202,4 @@ class TrayController:
         if self._icon:
             self._icon.icon = self._current_icon()
             self._icon.title = self._current_title()
-            # Rebuild menu so the lambda labels re-evaluate
             self._icon.menu = self._build_menu()

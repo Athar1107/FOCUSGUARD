@@ -1,0 +1,9 @@
+{
+  "exclude": [
+    "**/venv",
+    "**/__pycache__",
+    "c:/__pyrefly_virtual__",
+    "C:/__pyrefly_virtual__",
+    "**/__pyrefly_virtual__"
+  ]
+}

@@ -9,14 +9,16 @@ Startup sequence:
   3. Initialise DatabaseLayer
   4. Initialise SessionManager
   5. Initialise and start ActivityMonitor (background thread)
-  6. Initialise and start FlaskServer (background thread)
-  7. Initialise TrayController and run it on the main thread (blocks)
+  6. Initialise and start IdleDetector (background thread)
+  7. Initialise and start FlaskServer (background thread)
+  8. Initialise TrayController and run it on the main thread (blocks)
 
 Shutdown sequence (triggered by Quit in tray menu):
-  1. Stop ActivityMonitor thread
-  2. Flush any open session in SessionManager
-  3. Close DatabaseLayer
-  4. Stop TrayController (exits pystray loop → main thread returns)
+  1. Stop IdleDetector thread
+  2. Stop ActivityMonitor thread
+  3. Flush any open session in SessionManager
+  4. Close DatabaseLayer
+  5. Stop TrayController (exits pystray loop → main thread returns)
 """
 
 from __future__ import annotations
@@ -188,7 +190,15 @@ def main() -> None:
     )
     activity_monitor.start()
 
-    # 6. Flask server (browser extension bridge)
+    # 6. Idle Detector
+    from detectors.idle_detector import IdleDetector
+    idle_detector = IdleDetector(
+        config=config,
+        session_manager=session_manager,
+    )
+    idle_detector.start()
+
+    # 7. Flask server (browser extension bridge)
     from bridge.flask_server import FlaskServer
     flask_server = FlaskServer(config=config, url_state=url_state)
     try:
@@ -196,16 +206,25 @@ def main() -> None:
     except Exception as exc:
         logger.warning("Flask server failed to start: %s — URL tracking unavailable", exc)
 
-    # 7. Gaze signal — default to TOGGLED_OFF for Phase 1 (no webcam yet)
+    # 8. Gaze signal — default to TOGGLED_OFF for Phase 1 (no webcam yet)
     #    This means only Tier 1 (unconfirmed) sessions can be logged.
     from core.event_types import GazeSignal
     session_manager.on_gaze_signal(GazeSignal.TOGGLED_OFF)
 
+    # 9. Report Generator
+    from reporting.report_generator import ReportGenerator
+    report_generator = ReportGenerator(
+        db=db,
+        config=config,
+        project_root=PROJECT_ROOT,
+    )
+
     # ------------------------------------------------------------------
-    # Shutdown callback (called from tray Quit)
+    # Tray UI Callbacks
     # ------------------------------------------------------------------
     def on_quit() -> None:
         logger.info("Shutdown initiated")
+        idle_detector.stop()
         activity_monitor.stop()
         session_manager.flush()
         db.close()
@@ -216,10 +235,31 @@ def main() -> None:
         if enabled:
             # Phase 2 will start the GazeDetector here
             session_manager.on_gaze_signal(GazeSignal.TOGGLED_OFF)
-            logger.info("Webcam toggled ON (gaze detector not yet implemented in Phase 1)")
+            logger.info("Webcam toggled ON (gaze detector not yet implemented)")
         else:
             session_manager.on_gaze_signal(GazeSignal.TOGGLED_OFF)
             logger.info("Webcam toggled OFF")
+
+    def on_open_digest() -> None:
+        try:
+            report_generator.generate_and_open()
+        except Exception as exc:
+            logger.error("Failed to generate and open digest: %s", exc)
+
+    def on_open_log() -> None:
+        try:
+            log_path = data_dir / "focusguard.log"
+            if log_path.exists():
+                if platform.system() == "Windows":
+                    os.startfile(str(log_path))
+                else:
+                    import subprocess
+                    cmd = "open" if platform.system() == "Darwin" else "xdg-open"
+                    subprocess.run([cmd, str(log_path)])
+            else:
+                logger.warning("Log file does not exist at %s", log_path)
+        except Exception as exc:
+            logger.error("Failed to open log file: %s", exc)
 
     # ------------------------------------------------------------------
     # Tray controller — blocks main thread until Quit
@@ -229,6 +269,8 @@ def main() -> None:
         config=config,
         on_webcam_toggle=on_webcam_toggle,
         on_quit=on_quit,
+        on_open_digest=on_open_digest,
+        on_open_log=on_open_log,
     )
 
     logger.info("All components started. FocusGuard is running in the system tray.")
