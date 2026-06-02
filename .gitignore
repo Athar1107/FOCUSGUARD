@@ -25,3 +25,9 @@ Thumbs.db
 dist/
 build/
 *.spec
+
+# Kiro workspace files
+.kiro/
+
+# Test / dev scripts
+test_gaze.py
