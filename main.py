@@ -159,7 +159,9 @@ def _write_config(path: Path, config: dict) -> None:
 # ---------------------------------------------------------------------------
 
 def main() -> None:
-    data_dir = get_user_data_dir()
+    # Store all runtime data (db, logs, reports) inside the project folder
+    data_dir = PROJECT_ROOT / "data"
+    data_dir.mkdir(exist_ok=True)
     setup_logging(data_dir)
     logger = logging.getLogger("main")
     logger.info("FocusGuard starting — Python %s on %s", sys.version, platform.system())

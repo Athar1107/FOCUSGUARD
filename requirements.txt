@@ -1,6 +1,11 @@
+# Phase 1 — Core app, tray, activity monitoring, idle detection, browser bridge
 pystray~=0.19.5
 pygetwindow~=0.0.9
-psutil~=7.2.2
+psutil~=5.9.8
 Flask~=3.0.3
 pynput~=1.7.6
 Pillow>=10.4.0
+
+# Phase 2 — Gaze detection (webcam + on-device ML)
+opencv-python-headless>=4.9.0.80
+mediapipe>=0.10.14

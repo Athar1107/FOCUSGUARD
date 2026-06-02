@@ -1,3 +1,6 @@
+# Runtime data (db, logs, reports) — generated locally, never committed
+data/
+
 # Virtual environment
 venv/
 
