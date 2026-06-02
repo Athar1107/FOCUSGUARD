@@ -208,10 +208,19 @@ def main() -> None:
     except Exception as exc:
         logger.warning("Flask server failed to start: %s — URL tracking unavailable", exc)
 
-    # 8. Gaze signal — default to TOGGLED_OFF for Phase 1 (no webcam yet)
-    #    This means only Tier 1 (unconfirmed) sessions can be logged.
+    # 8. Gaze Detector (Phase 2 — OpenCV + MediaPipe)
     from core.event_types import GazeSignal
-    session_manager.on_gaze_signal(GazeSignal.TOGGLED_OFF)
+    from detectors.gaze_detector import GazeDetector
+
+    gaze_detector = GazeDetector(
+        config=config,
+        session_manager=session_manager,
+        on_error=lambda msg: tray_ref[0].set_error(msg) if tray_ref[0] else None,
+        on_error_cleared=lambda: tray_ref[0].clear_error() if tray_ref[0] else None,
+    )
+    # tray_ref is a list so the lambda can close over it before tray is created
+    tray_ref: list = [None]
+    gaze_detector.start()
 
     # 9. Report Generator
     from reporting.report_generator import ReportGenerator
@@ -226,6 +235,7 @@ def main() -> None:
     # ------------------------------------------------------------------
     def on_quit() -> None:
         logger.info("Shutdown initiated")
+        gaze_detector.stop()
         idle_detector.stop()
         activity_monitor.stop()
         session_manager.flush()
@@ -235,11 +245,10 @@ def main() -> None:
     def on_webcam_toggle(enabled: bool) -> None:
         config["webcam_enabled"] = enabled
         if enabled:
-            # Phase 2 will start the GazeDetector here
-            session_manager.on_gaze_signal(GazeSignal.TOGGLED_OFF)
-            logger.info("Webcam toggled ON (gaze detector not yet implemented)")
+            gaze_detector.enable()
+            logger.info("Webcam toggled ON")
         else:
-            session_manager.on_gaze_signal(GazeSignal.TOGGLED_OFF)
+            gaze_detector.disable()
             logger.info("Webcam toggled OFF")
 
     def on_open_digest() -> None:
@@ -274,6 +283,7 @@ def main() -> None:
         on_open_digest=on_open_digest,
         on_open_log=on_open_log,
     )
+    tray_ref[0] = tray  # give gaze_detector error callbacks access to tray
 
     logger.info("All components started. FocusGuard is running in the system tray.")
     tray.run()  # blocks here
