@@ -81,25 +81,8 @@ def _get_active_window_info() -> tuple[str, str, str]:
         logger.debug("pygetwindow error: %s", exc)
         return "", "", ""
 
-    # Resolve process name via psutil
-    process_name = ""
-    process_exe = ""
-    try:
-        import psutil
-        for proc in psutil.process_iter(["pid", "name", "exe"]):
-            try:
-                # Match by checking if the process has a window with this title
-                # psutil doesn't give us window handles directly; we use the
-                # foreground PID on Windows via ctypes as a best-effort approach.
-                pass
-            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                pass
-
-        # Simpler cross-platform approach: get foreground PID
-        process_name, process_exe = _get_foreground_process_info()
-    except Exception as exc:
-        logger.debug("psutil error: %s", exc)
-
+    # Resolve process name via foreground PID
+    process_name, process_exe = _get_foreground_process_info()
     return title, process_name, process_exe
 
 
@@ -114,10 +97,21 @@ def _get_foreground_process_info() -> tuple[str, str]:
     try:
         if system == "Windows":
             import ctypes
+            import ctypes.wintypes
+
             hwnd = ctypes.windll.user32.GetForegroundWindow()
-            pid = ctypes.c_ulong()
-            ctypes.windll.user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
-            proc = psutil.Process(pid.value)
+            if not hwnd:
+                return "", ""
+
+            pid = ctypes.wintypes.DWORD(0)
+            ctypes.windll.user32.GetWindowThreadProcessId(
+                hwnd, ctypes.byref(pid)
+            )
+            actual_pid = pid.value
+            if actual_pid == 0:
+                return "", ""
+
+            proc = psutil.Process(actual_pid)
             return proc.name(), proc.exe()
 
         elif system == "Darwin":
@@ -225,6 +219,18 @@ class ActivityMonitor:
                 if matched_site:
                     break
 
+            # Fallback to keyword matching if no full domain was found in the title
+            if not matched_site:
+                title_lower = title.lower()
+                for pattern in distracting_sites:
+                    parts = pattern.split(".")
+                    if parts:
+                        keyword = parts[0]
+                        if keyword and len(keyword) > 2 and keyword in title_lower:
+                            matched_site = pattern
+                            source = "window_title"
+                            break
+
         # --- Signal source 3: distracting app by process name ---
         if not matched_site and proc_name_lower:
             for app_pattern in distracting_apps:
@@ -246,6 +252,11 @@ class ActivityMonitor:
                 source=source,
             )
         else:
+            logger.debug(
+                "NEUTRAL: title=%r proc=%s",
+                title[:60] if title else "",
+                proc_name,
+            )
             self._session_manager.on_window_signal(
                 state=WindowSignal.NEUTRAL,
                 site_or_app="",

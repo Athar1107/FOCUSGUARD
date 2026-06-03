@@ -10,7 +10,7 @@ import json
 import logging
 import shutil
 import webbrowser
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Optional
 
@@ -32,10 +32,8 @@ class ReportGenerator:
         self._config = config
         self._project_root = project_root
 
-        # Resolve paths
-        from core.database_layer import get_user_data_dir
-        self._user_data_dir = get_user_data_dir()
-        self._reports_dir = self._user_data_dir / "reports"
+        # Resolve paths to align with database directory location
+        self._reports_dir = self._db.db_path.parent / "reports"
         self._reports_dir.mkdir(parents=True, exist_ok=True)
 
         self._template_dir = self._project_root / "reporting" / "templates"
@@ -94,7 +92,7 @@ class ReportGenerator:
 
         # Convert top site durations from seconds to minutes for clean reporting
         formatted_top_sites = [
-            {"site": s["site"], "duration_mins": round(s["duration_secs"] / 60.0, 1)}
+            {"site": s["site"], "duration_mins": round(float(s["duration_secs"]) / 60.0, 1)}
             for s in top_sites
         ]
 
@@ -116,14 +114,26 @@ class ReportGenerator:
         # Round values for display
         hourly_buckets = [round(h, 1) for h in hourly_buckets]
 
-        # 5. Generate past 7 days trend data
+        # 5. Generate past 7 days trend data (filling in gaps with 0)
+        try:
+            end_date = datetime.strptime(date_str, "%Y-%m-%d")
+        except ValueError:
+            end_date = datetime.now()
+
+        # Build list of 7 consecutive dates
+        consecutive_dates = [(end_date - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(6, -1, -1)]
+
+        # Get summaries from DB
         weekly_raw = self._db.get_weekly_summaries(date_str)
+        summaries_map = {row["date"]: row["confirmed_duration_secs"] for row in weekly_raw}
+
         weekly_trend = []
-        for row in weekly_raw:
+        for d in consecutive_dates:
+            secs = summaries_map.get(d, 0)
             weekly_trend.append(
                 {
-                    "date": row["date"],
-                    "confirmed_duration_mins": round(row["confirmed_duration_secs"] / 60.0, 1),
+                    "date": d,
+                    "confirmed_duration_mins": round(secs / 60.0, 1),
                 }
             )
 

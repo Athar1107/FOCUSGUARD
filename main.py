@@ -32,6 +32,11 @@ import shutil
 import sys
 from pathlib import Path
 
+# Suppress noisy MediaPipe / TensorFlow internal C++ logs
+os.environ.setdefault("GLOG_minloglevel", "3")
+os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "3")
+os.environ.setdefault("MEDIAPIPE_DISABLE_GPU", "1")
+
 
 # ---------------------------------------------------------------------------
 # Resolve project root so relative imports work when run from any cwd
@@ -130,11 +135,11 @@ def _default_config() -> dict:
             "buzzfeed.com", "huffpost.com",
         ],
         "distracting_apps": [],
-        "idle_threshold_seconds": 30,
+        "idle_threshold_seconds": 7,
         "window_poll_interval_seconds": 2,
         "gaze_poll_interval_seconds": 3,
-        "confirmation_window_secs": 120,
-        "min_session_duration_seconds": 10,
+        "confirmation_window_secs": 7,
+        "min_session_duration_seconds": 5,
         "work_hours_start": "09:00",
         "work_hours_end": "18:00",
         "webcam_enabled": True,

@@ -185,6 +185,11 @@ class GazeDetector:
             return
 
         try:
+            # Suppress MediaPipe C++ stderr noise before import
+            import os as _os
+            _os.environ.setdefault("GLOG_minloglevel", "3")
+            _os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "3")
+
             import mediapipe as mp
             from mediapipe.tasks.python import vision as mp_vision
             from mediapipe.tasks.python.core import base_options as mp_base

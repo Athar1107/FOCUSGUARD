@@ -135,7 +135,7 @@ class IdleDetector:
 
     def _check_idle(self) -> None:
         """Evaluate if the user has been inactive longer than the threshold."""
-        # Read the latest configuration value
+        # Re-read the latest configuration value every tick
         threshold = self._config.get("idle_threshold_seconds", 30)
         state_to_emit = None
 
