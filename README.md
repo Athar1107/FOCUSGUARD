@@ -24,6 +24,21 @@ You can customize FocusGuard's behavior by editing the `data/config.json` file:
 * `min_session_duration_seconds`: The minimum duration of a distracting session to be saved in the database (e.g., `2` seconds for testing).
 * `distracting_sites`: List of website domains to track as distraction candidates.
 * `webcam_enabled`: Toggle gaze tracking using the webcam (`true`/`false`).
+* `gaze_ear_closed_threshold`: EAR cutoff below which the detector treats the eyes as closed; higher values make the detector less tolerant of partially closed eyes.
+* `gaze_iris_offset_threshold`: Iris offset cutoff above which the detector treats the eyes as looking away; lower values make sideways gaze detection stricter.
+* `gaze_stable_frames`: Number of consecutive frames a gaze state must hold before the app emits a state change; higher values reduce flicker.
+* `cognitive_load`: Nested Phase 3B settings for milestone timing and message weighting.
+
+  ```json
+  "cognitive_load": {
+    "milestones_minutes": [90, 180, 240, 300],
+    "time_of_day_weights": {
+      "morning": { "calm": 4, "analytical": 4, "energetic": 1, "encouraging": 1 },
+      "afternoon": { "calm": 1, "analytical": 1, "energetic": 4, "encouraging": 4 },
+      "evening": { "calm": 5, "analytical": 2, "energetic": 1, "encouraging": 2 }
+    }
+  }
+  ```
 
 ---
 
@@ -65,6 +80,7 @@ To verify the app is logging sessions successfully in real-time, try the **YouTu
 ---
 
 ## 📈 Recent Improvements
+* **Cognitive Load Awareness**: Added weighted motivational reminders for sustained focus at 90, 180, 240, and 300+ minutes.
 * **Timezone Bug Fixes**: Corrected timezone offsets for session storage and aggregate weekly reporting.
 * **Fallback Title Heuristics**: Added enhanced page-title keyword heuristics to detect distracting sites even when the browser extension is not installed.
 * **Pathing & URIs**: Resolved absolute file path errors on Windows when loading reports in Chrome.

@@ -17,6 +17,7 @@ Menu items:
 from __future__ import annotations
 
 import logging
+import threading
 from typing import Callable, Optional
 
 import pystray
@@ -73,6 +74,7 @@ class TrayController:
         self._webcam_enabled: bool = config.get("webcam_enabled", True)
         self._has_error: bool = False
         self._status_text: str = "Running"
+        self._notification_lock = threading.Lock()
 
         self._icon: Optional[pystray.Icon] = None
 
@@ -110,6 +112,21 @@ class TrayController:
         self._has_error = False
         self._status_text = "Running"
         self._refresh()
+
+    def notify(self, message: str, title: str = "FocusGuard") -> None:
+        """Show a native tray notification when the platform supports it."""
+        with self._notification_lock:
+            if self._icon is None:
+                logger.debug("Skipping notification because tray icon is not ready")
+                return
+            self._icon.notify(message, title)
+
+    def clear_notification(self) -> None:
+        """Dismiss the current tray notification when the platform supports it."""
+        with self._notification_lock:
+            if self._icon is None:
+                return
+            self._icon.remove_notification()
 
     def set_webcam_state(self, enabled: bool) -> None:
         """Update the webcam state indicator without triggering the callback."""

@@ -9,6 +9,7 @@ Emits IdleSignal.ACTIVE immediately on any user input event.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 import logging
 import threading
 import time
@@ -22,6 +23,28 @@ from core.session_manager import SessionManager
 logger = logging.getLogger(__name__)
 
 
+@dataclass(frozen=True)
+class IdleStateSnapshot:
+    """Thread-safe snapshot of the current idle detector state."""
+
+    state: IdleSignal
+    active_since_monotonic: float
+    idle_since_monotonic: Optional[float]
+    sampled_at_monotonic: float
+
+    @property
+    def active_duration_seconds(self) -> float:
+        if self.state != IdleSignal.ACTIVE:
+            return 0.0
+        return max(0.0, self.sampled_at_monotonic - self.active_since_monotonic)
+
+    @property
+    def idle_duration_seconds(self) -> float:
+        if self.state != IdleSignal.IDLE or self.idle_since_monotonic is None:
+            return 0.0
+        return max(0.0, self.sampled_at_monotonic - self.idle_since_monotonic)
+
+
 class IdleDetector:
     """
     Background tracker that monitors mouse & keyboard events using pynput,
@@ -33,6 +56,8 @@ class IdleDetector:
         self._session_manager = session_manager
 
         self._last_input_time = time.monotonic()
+        self._active_since_time = self._last_input_time
+        self._idle_since_time: Optional[float] = None
         self._current_state = IdleSignal.ACTIVE
 
         self._keyboard_listener: Optional[keyboard.Listener] = None
@@ -50,6 +75,8 @@ class IdleDetector:
         # Initialise state
         with self._lock:
             self._last_input_time = time.monotonic()
+            self._active_since_time = self._last_input_time
+            self._idle_since_time = None
             self._current_state = IdleSignal.ACTIVE
 
         # Start pynput global OS hook listeners
@@ -109,6 +136,8 @@ class IdleDetector:
             # If we were idle, transition back to active immediately
             if self._current_state == IdleSignal.IDLE:
                 self._current_state = IdleSignal.ACTIVE
+                self._active_since_time = self._last_input_time
+                self._idle_since_time = None
                 logger.debug("Activity detected — transitioning from IDLE to ACTIVE")
                 state_to_emit = IdleSignal.ACTIVE
 
@@ -143,6 +172,7 @@ class IdleDetector:
             elapsed = time.monotonic() - self._last_input_time
             if elapsed >= threshold and self._current_state == IdleSignal.ACTIVE:
                 self._current_state = IdleSignal.IDLE
+                self._idle_since_time = time.monotonic()
                 logger.debug("No input detected for %.1fs — transitioning to IDLE", elapsed)
                 state_to_emit = IdleSignal.IDLE
 
@@ -151,3 +181,13 @@ class IdleDetector:
                 self._session_manager.on_idle_signal(state_to_emit)
             except Exception as exc:
                 logger.error("Failed to forward IDLE signal: %s", exc)
+
+    def get_state_snapshot(self) -> IdleStateSnapshot:
+        """Return a thread-safe snapshot of the current idle state."""
+        with self._lock:
+            return IdleStateSnapshot(
+                state=self._current_state,
+                active_since_monotonic=self._active_since_time,
+                idle_since_monotonic=self._idle_since_time,
+                sampled_at_monotonic=time.monotonic(),
+            )

@@ -357,6 +357,18 @@ class DatabaseLayer:
         ).fetchall()
         return [dict(r) for r in reversed(rows)]
 
+    def get_all_logged_dates(self) -> list[str]:
+        """Return a sorted list of all unique date strings from daily_summaries table."""
+        assert self._conn is not None
+        try:
+            rows = self._conn.execute(
+                "SELECT DISTINCT date FROM daily_summaries ORDER BY date"
+            ).fetchall()
+            return [row["date"] for row in rows]
+        except sqlite3.Error as exc:
+            logger.warning("Failed to fetch all logged dates: %s", exc)
+            return []
+
     # ------------------------------------------------------------------
     # Sites sync
     # ------------------------------------------------------------------

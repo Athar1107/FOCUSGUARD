@@ -11,7 +11,8 @@ Startup sequence:
   5. Initialise and start ActivityMonitor (background thread)
   6. Initialise and start IdleDetector (background thread)
   7. Initialise and start FlaskServer (background thread)
-  8. Initialise TrayController and run it on the main thread (blocks)
+    8. Initialise TrayController and run it on the main thread (blocks)
+    9. Start WorkReminder to watch for extended active/idle stretches
 
 Shutdown sequence (triggered by Quit in tray menu):
   1. Stop IdleDetector thread
@@ -30,6 +31,7 @@ import os
 import platform
 import shutil
 import sys
+import time
 from pathlib import Path
 
 # Suppress noisy MediaPipe / TensorFlow internal C++ logs
@@ -67,24 +69,39 @@ def get_user_data_dir() -> Path:
 # Logging setup
 # ---------------------------------------------------------------------------
 
+
+class _UtcFormatter(logging.Formatter):
+    converter = time.gmtime
+
+
+def _build_file_formatter() -> logging.Formatter:
+    return _UtcFormatter(
+        "%(asctime)sZ | %(levelname)-8s | %(name)s:%(lineno)d | %(threadName)s | %(message)s",
+        "%Y-%m-%dT%H:%M:%S",
+    )
+
 def setup_logging(data_dir: Path) -> None:
     log_path = data_dir / "focusguard.log"
     root = logging.getLogger()
     root.setLevel(logging.DEBUG)
+
+    for handler in list(root.handlers):
+        root.removeHandler(handler)
 
     # Rotating file handler — max 5 MB, keep 2 backups
     fh = logging.handlers.RotatingFileHandler(
         log_path, maxBytes=5 * 1024 * 1024, backupCount=2, encoding="utf-8"
     )
     fh.setLevel(logging.DEBUG)
-    fh.setFormatter(logging.Formatter(
-        "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
-    ))
+    fh.setFormatter(_build_file_formatter())
 
     # Console handler — INFO and above
     ch = logging.StreamHandler(sys.stdout)
     ch.setLevel(logging.INFO)
-    ch.setFormatter(logging.Formatter("[%(levelname)s] %(name)s: %(message)s"))
+    ch.setFormatter(logging.Formatter(
+        "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
+        "%H:%M:%S",
+    ))
 
     root.addHandler(fh)
     root.addHandler(ch)
@@ -146,9 +163,39 @@ def _default_config() -> dict:
         "webcam_device_index": 0,
         "gaze_fps": 5,
         "gaze_retry_interval_secs": 30,
+        "gaze_ear_closed_threshold": 0.20,
+        "gaze_iris_offset_threshold": 0.40,
+        "gaze_stable_frames": 2,
+        "cognitive_load": {
+            "milestones_minutes": [90, 180, 240, 300],
+            "time_of_day_weights": {
+                "morning": {
+                    "calm": 4,
+                    "analytical": 4,
+                    "energetic": 1,
+                    "encouraging": 1,
+                },
+                "afternoon": {
+                    "calm": 1,
+                    "analytical": 1,
+                    "energetic": 4,
+                    "encouraging": 4,
+                },
+                "evening": {
+                    "calm": 5,
+                    "analytical": 2,
+                    "energetic": 1,
+                    "encouraging": 2,
+                },
+            },
+        },
         "flask_port": 5678,
         "end_of_day_time": "17:30",
         "launch_at_startup": True,
+        "work_reminder_active_threshold_seconds": 3 * 60 * 60,
+        "work_reminder_idle_threshold_seconds": 3 * 60 * 60,
+        "work_reminder_active_auto_close_seconds": 5 * 60,
+        "work_reminder_poll_interval_seconds": 30,
     }
 
 
@@ -240,6 +287,7 @@ def main() -> None:
     # ------------------------------------------------------------------
     def on_quit() -> None:
         logger.info("Shutdown initiated")
+        work_reminder.stop()
         gaze_detector.stop()
         idle_detector.stop()
         activity_monitor.stop()
@@ -289,6 +337,16 @@ def main() -> None:
         on_open_log=on_open_log,
     )
     tray_ref[0] = tray  # give gaze_detector error callbacks access to tray
+
+    from core.work_reminder import WorkReminder
+    from core.cognitive_load import CognitiveLoadMessenger
+    work_reminder = WorkReminder(
+        config=config,
+        idle_detector=idle_detector,
+        tray=tray,
+        cognitive_load=CognitiveLoadMessenger(config=config),
+    )
+    work_reminder.start()
 
     logger.info("All components started. FocusGuard is running in the system tray.")
     tray.run()  # blocks here
