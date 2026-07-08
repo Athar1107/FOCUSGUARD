@@ -1,0 +1,60 @@
+{
+  "distracting_sites": [
+    "reddit.com",
+    "twitter.com",
+    "x.com",
+    "instagram.com",
+    "facebook.com",
+    "youtube.com",
+    "tiktok.com",
+    "news.ycombinator.com",
+    "bbc.com",
+    "cnn.com",
+    "theguardian.com",
+    "nytimes.com",
+    "dailymail.co.uk",
+    "buzzfeed.com",
+    "huffpost.com"
+  ],
+  "distracting_apps": [],
+  "idle_threshold_seconds": 30,
+  "window_poll_interval_seconds": 2,
+  "gaze_poll_interval_seconds": 3,
+  "confirmation_window_secs": 120,
+  "min_session_duration_seconds": 10,
+  "work_hours_start": "09:00",
+  "work_hours_end": "18:00",
+  "webcam_enabled": true,
+  "webcam_device_index": 0,
+  "gaze_fps": 5,
+  "gaze_retry_interval_secs": 30,
+  "gaze_ear_closed_threshold": 0.20,
+  "gaze_iris_offset_threshold": 0.40,
+  "gaze_stable_frames": 2,
+  "cognitive_load": {
+    "milestones_minutes": [90, 180, 240, 300],
+    "time_of_day_weights": {
+      "morning": {
+        "calm": 4,
+        "analytical": 4,
+        "energetic": 1,
+        "encouraging": 1
+      },
+      "afternoon": {
+        "calm": 1,
+        "analytical": 1,
+        "energetic": 4,
+        "encouraging": 4
+      },
+      "evening": {
+        "calm": 5,
+        "analytical": 2,
+        "energetic": 1,
+        "encouraging": 2
+      }
+    }
+  },
+  "flask_port": 5678,
+  "end_of_day_time": "17:30",
+  "launch_at_startup": true
+}

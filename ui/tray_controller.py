@@ -64,12 +64,14 @@ class TrayController:
         on_quit: Callable[[], None],
         on_open_digest: Optional[Callable[[], None]] = None,
         on_open_log: Optional[Callable[[], None]] = None,
+        on_open_settings: Optional[Callable[[], None]] = None,
     ) -> None:
         self._config = config
         self._on_webcam_toggle = on_webcam_toggle
         self._on_quit = on_quit
         self._on_open_digest = on_open_digest
         self._on_open_log = on_open_log
+        self._on_open_settings = on_open_settings
 
         self._webcam_enabled: bool = config.get("webcam_enabled", True)
         self._has_error: bool = False
@@ -159,6 +161,11 @@ class TrayController:
                 pystray.MenuItem("Open Application Log", action=self._handle_open_log)
             )
 
+        if self._on_open_settings is not None:
+            items.append(
+                pystray.MenuItem("Settings", action=self._handle_open_settings)
+            )
+
         items.extend([
             pystray.Menu.SEPARATOR,
             pystray.MenuItem(
@@ -186,6 +193,11 @@ class TrayController:
         if self._on_open_log:
             logger.info("Open application log requested from tray")
             self._on_open_log()
+
+    def _handle_open_settings(self, icon, item) -> None:
+        if self._on_open_settings:
+            logger.info("Open settings requested from tray")
+            self._on_open_settings()
 
     def _handle_webcam_toggle(self, icon, item) -> None:
         self._webcam_enabled = not self._webcam_enabled

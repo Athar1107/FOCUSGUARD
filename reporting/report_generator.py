@@ -67,7 +67,7 @@ class ReportGenerator:
             return "Work"
         elif any(k in name_lower for k in ["slack", "discord", "messenger", "whatsapp", "teams", "zoom", "telegram", "skype"]):
             return "Communication"
-        elif any(k in name_lower for k in ["chrome", "firefox", "msedge", "safari", "brave", "opera", "wikipedia", "stackoverflow", "github", "ycombinator"]):
+        elif any(k in name_lower for k in ["wikipedia", "stackoverflow", "github", "ycombinator"]):
             return "Education"
         elif any(k in name_lower for k in ["searchapp", "explorer", "taskmgr", "advinst", "advanced installer", "settings", "cmd", "powershell"]):
             return "Utility"

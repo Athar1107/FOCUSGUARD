@@ -152,11 +152,11 @@ def _default_config() -> dict:
             "buzzfeed.com", "huffpost.com",
         ],
         "distracting_apps": [],
-        "idle_threshold_seconds": 7,
+        "idle_threshold_seconds": 30,
         "window_poll_interval_seconds": 2,
         "gaze_poll_interval_seconds": 3,
-        "confirmation_window_secs": 7,
-        "min_session_duration_seconds": 5,
+        "confirmation_window_secs": 120,
+        "min_session_duration_seconds": 10,
         "work_hours_start": "09:00",
         "work_hours_end": "18:00",
         "webcam_enabled": True,
@@ -325,6 +325,10 @@ def main() -> None:
         except Exception as exc:
             logger.error("Failed to open log file: %s", exc)
 
+    def on_open_settings() -> None:
+        from ui.settings_window import SettingsWindow
+        SettingsWindow(config_path=data_dir / "config.json").open()
+
     # ------------------------------------------------------------------
     # Tray controller — blocks main thread until Quit
     # ------------------------------------------------------------------
@@ -335,6 +339,7 @@ def main() -> None:
         on_quit=on_quit,
         on_open_digest=on_open_digest,
         on_open_log=on_open_log,
+        on_open_settings=on_open_settings,
     )
     tray_ref[0] = tray  # give gaze_detector error callbacks access to tray
 

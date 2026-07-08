@@ -1,0 +1,8 @@
+{
+  "manifest_version": 3,
+  "name": "FocusGuard Bridge",
+  "version": "1.0",
+  "description": "Sends active tab URL to FocusGuard desktop app",
+  "permissions": ["tabs", "activeTab"],
+  "background": { "service_worker": "background.js" }
+}

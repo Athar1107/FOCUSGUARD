@@ -109,16 +109,6 @@ def _iris_offset(landmarks, eye_idx: list[int], iris_idx: list[int],
     return abs(iris_cx - eye_cx) / eye_w if eye_w > 0 else 0.0
 
 
-def _classify(landmarks, w: int, h: int) -> GazeSignal:
-    return _classify_with_thresholds(
-        landmarks,
-        w,
-        h,
-        ear_closed_threshold=_EAR_CLOSED_THRESHOLD_DEFAULT,
-        iris_offset_threshold=_IRIS_OFFSET_THRESHOLD_DEFAULT,
-    )
-
-
 def _classify_with_thresholds(
     landmarks,
     w: int,
