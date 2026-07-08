@@ -62,7 +62,7 @@ class DatabaseLayer:
     def __init__(self, db_path: Optional[Path] = None) -> None:
         if db_path is None:
             db_path = get_user_data_dir() / "focusguard.db"
-        self.db_path = db_path
+        self.db_path = db_path.resolve()
         self._conn: Optional[sqlite3.Connection] = None
         self._connect()
         self._create_schema()
@@ -150,7 +150,10 @@ class DatabaseLayer:
 
         started_str = session.started_at.strftime("%Y-%m-%dT%H:%M:%SZ")
         ended_str = session.ended_at.strftime("%Y-%m-%dT%H:%M:%SZ")
-        date_str = session.started_at.strftime("%Y-%m-%d")
+
+        # Convert the session start to the local timezone to determine the local calendar date
+        local_start = session.started_at.astimezone()
+        local_date_str = local_start.strftime("%Y-%m-%d")
 
         try:
             with self._conn:  # transaction
@@ -172,14 +175,15 @@ class DatabaseLayer:
                         session.gaze_status.value,
                     ),
                 )
-                self._update_daily_summary(date_str, session)
+                self._update_daily_summary(local_date_str, session)
 
             logger.info(
-                "Session written: %s | %s | %ds | %s",
+                "Session written: %s | %s | %ds | %s (local date: %s)",
                 session.tier.value,
                 session.site,
                 session.duration_seconds,
                 started_str,
+                local_date_str,
             )
         except sqlite3.Error as exc:
             logger.error("Failed to write session: %s", exc)
@@ -300,10 +304,32 @@ class DatabaseLayer:
     def get_sessions_for_date(self, date_str: str) -> list[dict]:
         """Return all session rows for a given YYYY-MM-DD date string."""
         assert self._conn is not None
-        rows = self._conn.execute(
-            "SELECT * FROM sessions WHERE started_at LIKE ? ORDER BY started_at",
-            (f"{date_str}%",),
-        ).fetchall()
+        try:
+            # Parse the local date string
+            local_date = datetime.strptime(date_str, "%Y-%m-%d")
+            # Calculate start and end datetimes of the local day, localized to the system timezone
+            local_start = datetime.combine(local_date, datetime.min.time()).astimezone()
+            local_end = datetime.combine(local_date, datetime.max.time()).astimezone()
+
+            # Convert to UTC ISO format strings to match the database timestamps
+            start_utc = local_start.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+            end_utc = local_end.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+            rows = self._conn.execute(
+                """
+                SELECT * FROM sessions
+                WHERE started_at >= ? AND started_at <= ?
+                ORDER BY started_at
+                """,
+                (start_utc, end_utc),
+            ).fetchall()
+        except ValueError:
+            # Fallback to simple matching if date parsing fails
+            rows = self._conn.execute(
+                "SELECT * FROM sessions WHERE started_at LIKE ? ORDER BY started_at",
+                (f"{date_str}%",),
+            ).fetchall()
+
         return [dict(r) for r in rows]
 
     def get_daily_summary(self, date_str: str) -> Optional[dict]:
@@ -330,6 +356,18 @@ class DatabaseLayer:
             (end_date,),
         ).fetchall()
         return [dict(r) for r in reversed(rows)]
+
+    def get_all_logged_dates(self) -> list[str]:
+        """Return a sorted list of all unique date strings from daily_summaries table."""
+        assert self._conn is not None
+        try:
+            rows = self._conn.execute(
+                "SELECT DISTINCT date FROM daily_summaries ORDER BY date"
+            ).fetchall()
+            return [row["date"] for row in rows]
+        except sqlite3.Error as exc:
+            logger.warning("Failed to fetch all logged dates: %s", exc)
+            return []
 
     # ------------------------------------------------------------------
     # Sites sync

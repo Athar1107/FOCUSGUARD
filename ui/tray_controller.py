@@ -17,6 +17,7 @@ Menu items:
 from __future__ import annotations
 
 import logging
+import threading
 from typing import Callable, Optional
 
 import pystray
@@ -63,16 +64,19 @@ class TrayController:
         on_quit: Callable[[], None],
         on_open_digest: Optional[Callable[[], None]] = None,
         on_open_log: Optional[Callable[[], None]] = None,
+        on_open_settings: Optional[Callable[[], None]] = None,
     ) -> None:
         self._config = config
         self._on_webcam_toggle = on_webcam_toggle
         self._on_quit = on_quit
         self._on_open_digest = on_open_digest
         self._on_open_log = on_open_log
+        self._on_open_settings = on_open_settings
 
         self._webcam_enabled: bool = config.get("webcam_enabled", True)
         self._has_error: bool = False
         self._status_text: str = "Running"
+        self._notification_lock = threading.Lock()
 
         self._icon: Optional[pystray.Icon] = None
 
@@ -111,6 +115,21 @@ class TrayController:
         self._status_text = "Running"
         self._refresh()
 
+    def notify(self, message: str, title: str = "FocusGuard") -> None:
+        """Show a native tray notification when the platform supports it."""
+        with self._notification_lock:
+            if self._icon is None:
+                logger.debug("Skipping notification because tray icon is not ready")
+                return
+            self._icon.notify(message, title)
+
+    def clear_notification(self) -> None:
+        """Dismiss the current tray notification when the platform supports it."""
+        with self._notification_lock:
+            if self._icon is None:
+                return
+            self._icon.remove_notification()
+
     def set_webcam_state(self, enabled: bool) -> None:
         """Update the webcam state indicator without triggering the callback."""
         self._webcam_enabled = enabled
@@ -142,6 +161,11 @@ class TrayController:
                 pystray.MenuItem("Open Application Log", action=self._handle_open_log)
             )
 
+        if self._on_open_settings is not None:
+            items.append(
+                pystray.MenuItem("Settings", action=self._handle_open_settings)
+            )
+
         items.extend([
             pystray.Menu.SEPARATOR,
             pystray.MenuItem(
@@ -169,6 +193,11 @@ class TrayController:
         if self._on_open_log:
             logger.info("Open application log requested from tray")
             self._on_open_log()
+
+    def _handle_open_settings(self, icon, item) -> None:
+        if self._on_open_settings:
+            logger.info("Open settings requested from tray")
+            self._on_open_settings()
 
     def _handle_webcam_toggle(self, icon, item) -> None:
         self._webcam_enabled = not self._webcam_enabled

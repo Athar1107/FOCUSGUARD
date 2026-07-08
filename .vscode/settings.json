@@ -1,6 +1,7 @@
 {
   "python.analysis.exclude": [
     "**/venv",
+    "**/.venv",
     "**/__pycache__",
     "c:/__pyrefly_virtual__/**",
     "C:/__pyrefly_virtual__/**",
@@ -8,6 +9,7 @@
   ],
   "python.analysis.ignore": [
     "**/venv",
+    "**/.venv",
     "**/__pycache__",
     "c:/__pyrefly_virtual__/**",
     "C:/__pyrefly_virtual__/**",
@@ -15,6 +17,7 @@
   ],
   "search.exclude": {
     "**/venv": true,
+    "**/.venv": true,
     "**/__pycache__": true,
     "**/assets": true,
     "c:/__pyrefly_virtual__": true,

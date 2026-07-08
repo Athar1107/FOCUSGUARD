@@ -1,592 +1,819 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FocusGuard Daily Digest — {{ date }}</title>
-  
-  <!-- Premium Typography -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  
-  <!-- Offline-Capable Chart.js Asset -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FocusGuard — Daily Digest {{ date }}</title>
   <script src="chart.min.js"></script>
-
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    /* ----------------------------------------------------------------------
-       Premium Dark-Mode Glassmorphism Design System
-       ---------------------------------------------------------------------- */
+    /* ── Reset & Variables ───────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    
     :root {
-      --bg-gradient: linear-gradient(135deg, #0b0f19 0%, #111827 100%);
-      --glass-bg: rgba(17, 24, 39, 0.7);
-      --glass-border: rgba(255, 255, 255, 0.06);
-      --glass-glow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      --bg-main: #000000;
+      --bg-sidebar: #0a0b0d;
+      --bg-card: #0c0d12;
+      --bg-card-hover: #13151c;
+      --border-color: #1a1e24;
+      --text-primary: #ffffff;
+      --text-secondary: #8e929d;
+      --accent-teal: #00adb5;
       
-      --color-primary: hsl(142, 70%, 45%);     /* vibrant green */
-      --color-accent: hsl(210, 100%, 50%);     /* bright sky blue */
-      --color-warning: hsl(35, 100%, 55%);     /* amber orange */
-      --color-danger: hsl(350, 85%, 55%);      /* glowing distraction red */
-      
-      --text-main: #f3f4f6;
-      --text-muted: #9ca3af;
-      --text-glow: 0 0 12px rgba(255, 255, 255, 0.1);
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
+      /* Category Colors matching screenshot */
+      --color-work: #d35400;
+      --color-education: #1b4d22;
+      --color-communication: #0f4c81;
+      --color-utility: #d4a017;
+      --color-entertainment: #9c27b0;
+      --color-news: #673ab7;
+      --color-other: #3f51b5;
     }
 
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: var(--bg-gradient);
-      color: var(--text-main);
+      background: var(--bg-main);
+      color: var(--text-primary);
       min-height: 100vh;
-      padding: 2rem 1.5rem;
-      line-height: 1.6;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    /* ----------------------------------------------------------------------
-       Header & Branding
-       ---------------------------------------------------------------------- */
-    header {
       display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    a { color: var(--accent-teal); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── Header ───────────────────────────────────────────────── */
+    .header {
+      display: flex;
+      align-items: center;
       justify-content: space-between;
-      align-items: center;
-      margin-bottom: 2.5rem;
-      padding: 1.5rem;
-      background: var(--glass-bg);
-      border: 1px solid var(--glass-border);
-      border-radius: 20px;
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      box-shadow: var(--glass-glow);
+      margin-bottom: 32px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border-color);
     }
-
-    .branding {
-      display: flex;
-      align-items: center;
-      gap: 12px;
+    .header-left h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #fff;
     }
-
-    .logo-mark {
-      width: 32px;
-      height: 32px;
-      background: radial-gradient(circle, var(--color-primary) 0%, #2e7d32 100%);
+    .header-left .date-label {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+    .logo {
+      width: 40px; height: 40px;
+      background: #38a169;
       border-radius: 50%;
-      box-shadow: 0 0 15px rgba(76, 175, 80, 0.4);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; font-weight: 700; color: #fff;
     }
 
-    .branding h1 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      letter-spacing: -0.5px;
-      background: linear-gradient(to right, #ffffff, #a3a3a3);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
 
-    .date-badge {
-      font-size: 0.95rem;
-      font-weight: 500;
-      color: var(--color-accent);
-      background: rgba(59, 130, 246, 0.1);
-      border: 1px solid rgba(59, 130, 246, 0.2);
-      padding: 0.5rem 1rem;
-      border-radius: 30px;
-      box-shadow: 0 0 10px rgba(59, 130, 246, 0.15);
-    }
 
-    /* ----------------------------------------------------------------------
-       Grid & Metric Cards
-       ---------------------------------------------------------------------- */
-    .metrics-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1.5rem;
-      margin-bottom: 2rem;
-    }
-
-    .card {
-      background: var(--glass-bg);
-      border: 1px solid var(--glass-border);
-      border-radius: 20px;
-      padding: 1.75rem;
-      box-shadow: var(--glass-glow);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      position: relative;
-      overflow: hidden;
-      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
-    }
-
-    .card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 4px;
-    }
-
-    .card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), 0 0 15px rgba(255, 255, 255, 0.02);
-      border-color: rgba(255, 255, 255, 0.12);
-    }
-
-    .card-confirmed::before { background: var(--color-danger); }
-    .card-sessions::before { background: var(--color-warning); }
-    .card-unconfirmed::before { background: var(--color-accent); }
-
-    .card-title {
-      font-size: 0.85rem;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--text-muted);
-      margin-bottom: 0.75rem;
-      font-weight: 600;
-    }
-
-    .card-value {
-      font-size: 2.5rem;
-      font-weight: 700;
-      letter-spacing: -1px;
-      margin-bottom: 0.25rem;
+    /* ── Main App Layout ──────────────────────────────────────── */
+    .app-container {
+      flex: 1;
       display: flex;
-      align-items: baseline;
-      gap: 4px;
+      position: relative;
     }
 
-    .card-value span {
-      font-size: 1.25rem;
-      color: var(--text-muted);
-      font-weight: 500;
+
+
+    /* Main Workspace */
+    .workspace {
+      flex: 1;
+      padding: 24px 32px;
+      overflow-y: auto;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
     }
 
-    .card-confirmed .card-value {
-      color: var(--color-danger);
-      text-shadow: 0 0 15px rgba(244, 67, 54, 0.25);
+    .header-section {
+      margin-bottom: 24px;
+    }
+    .header-section h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--text-primary);
     }
 
-    .card-description {
-      font-size: 0.85rem;
-      color: var(--text-muted);
+    /* ── 7-Day Trend Chart Card ──────────────────────────────── */
+    .trend-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 24px;
+      position: relative;
+    }
+    .chart-container {
+      position: relative;
+      height: 240px;
+      width: 100%;
     }
 
-    /* ----------------------------------------------------------------------
-       Visualizations & Layout sections
-       ---------------------------------------------------------------------- */
-    .dashboard-layout {
+    /* ── Segmented Category Bar ───────────────────────────────── */
+    .segmented-bar {
+      display: flex;
+      height: 36px;
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 32px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-card);
+    }
+    .seg-item {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: #ffffff;
+      padding: 0 8px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      transition: filter 0.15s;
+    }
+    .seg-item:hover {
+      filter: brightness(1.15);
+    }
+
+    /* ── Lower Section Grid ───────────────────────────────────── */
+    .lower-grid {
       display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: 1.5rem;
-      margin-bottom: 2rem;
+      grid-template-columns: 350px 1fr;
+      gap: 24px;
+      align-items: start;
+      margin-bottom: 32px;
     }
-
-    @media (max-width: 968px) {
-      .dashboard-layout {
+    @media (max-width: 900px) {
+      .lower-grid {
         grid-template-columns: 1fr;
       }
     }
 
-    .section-container {
-      background: var(--glass-bg);
-      border: 1px solid var(--glass-border);
-      border-radius: 24px;
-      padding: 2rem;
-      box-shadow: var(--glass-glow);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+    /* Donut breakdown card */
+    .donut-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 24px;
+      height: 100%;
+      min-height: 420px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .donut-card h3 {
+      font-size: 14px;
+      color: var(--text-secondary);
+      font-weight: 600;
+      margin-bottom: 20px;
+      width: 100%;
+      text-align: left;
+    }
+    .donut-wrap {
+      position: relative;
+      width: 200px;
+      height: 200px;
+      margin-bottom: 20px;
     }
 
-    .section-title {
-      font-size: 1.15rem;
+    /* App details list card */
+    .details-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 24px;
+      min-height: 420px;
+    }
+    .details-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 16px;
+    }
+    .total-time-lbl {
+      font-size: 14px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+    .total-time-val {
+      font-family: 'Outfit', sans-serif;
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-top: 4px;
+    }
+    .date-navigation {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .date-nav-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .date-nav-btn:hover:not(.disabled) {
+      background: var(--bg-card-hover);
+      border-color: #505560;
+    }
+    .date-nav-btn.disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+    .current-date-lbl {
+      font-size: 15px;
       font-weight: 600;
-      margin-bottom: 1.5rem;
-      letter-spacing: -0.2px;
+      color: var(--text-primary);
+      min-width: 120px;
+      text-align: center;
+    }
+
+    /* List of apps */
+    .app-list {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .app-row {
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .app-row-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .app-row-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+      min-width: 0;
+    }
+    .app-icon-wrap {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .app-name-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+    .app-display-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .category-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 12px;
+      text-transform: none;
+      flex-shrink: 0;
+    }
+    .app-row-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-shrink: 0;
+    }
+    .app-duration {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+    .options-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .options-btn:hover {
+      background: var(--bg-card-hover);
+      color: var(--text-primary);
+      border-color: var(--border-color);
+    }
+    .app-progress-container {
+      height: 4px;
+      background: #15181f;
+      border-radius: 2px;
+      overflow: hidden;
+      width: 100%;
+      margin-top: 2px;
+    }
+    .app-progress-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.4s ease-out;
+    }
+
+    /* ── Collapsible Session Log Section ─────────────────────── */
+    .session-log-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      margin-bottom: 48px;
+    }
+    .session-log-header {
+      padding: 18px 24px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-      padding-bottom: 0.75rem;
+      cursor: pointer;
+      user-select: none;
+      border-bottom: 1px solid transparent;
+      transition: background 0.2s;
     }
-
-    .chart-wrapper {
-      position: relative;
-      height: 280px;
-      width: 100%;
+    .session-log-header:hover {
+      background: var(--bg-card-hover);
     }
-
-    /* ----------------------------------------------------------------------
-       Ranked List / Sites Section
-       ---------------------------------------------------------------------- */
-    .site-list {
-      display: flex;
-      flex-direction: column;
-      gap: 1.25rem;
+    .session-log-header.open {
+      border-bottom: 1px solid var(--border-color);
     }
-
-    .site-row {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    .site-info {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.9rem;
-    }
-
-    .site-name {
-      font-weight: 500;
-      color: var(--text-main);
-    }
-
-    .site-time {
-      color: var(--color-danger);
+    .session-log-header h3 {
+      font-size: 15px;
       font-weight: 600;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
-
-    .progress-bar-bg {
-      background: rgba(255, 255, 255, 0.05);
-      height: 8px;
-      border-radius: 10px;
-      overflow: hidden;
-    }
-
-    .progress-bar-fill {
-      background: linear-gradient(90deg, var(--color-danger) 0%, #d32f2f 100%);
-      height: 100%;
-      border-radius: 10px;
-      box-shadow: 0 0 8px rgba(211, 47, 47, 0.4);
-    }
-
-    /* ----------------------------------------------------------------------
-       Chronological Session Logs
-       ---------------------------------------------------------------------- */
-    .logs-container {
-      margin-top: 1.5rem;
-    }
-
-    .log-table-wrapper {
+    .session-log-content {
+      display: none;
+      padding: 20px 24px;
       overflow-x: auto;
+    }
+    .session-log-content.open {
+      display: block;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
+      font-size: 13px;
       text-align: left;
-      font-size: 0.9rem;
     }
-
-    th, td {
-      padding: 1rem 1.25rem;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-    }
-
     th {
-      font-weight: 600;
-      color: var(--text-muted);
+      padding: 10px 16px;
+      font-size: 11px;
       text-transform: uppercase;
-      font-size: 0.75rem;
-      letter-spacing: 1px;
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border-color);
+      font-weight: 700;
     }
-
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-primary);
+    }
     tr:last-child td {
       border-bottom: none;
     }
-
     tr:hover td {
-      background: rgba(255, 255, 255, 0.01);
+      background: rgba(255,255,255,0.02);
     }
 
     .badge {
-      display: inline-flex;
-      align-items: center;
-      padding: 0.25rem 0.75rem;
-      border-radius: 20px;
-      font-size: 0.75rem;
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-size: 11px;
       font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
     }
+    .badge-confirmed   { background: #742a2a; color: #fc8181; }
+    .badge-unconfirmed { background: #7b341e; color: #f6ad55; }
+    .badge-looking     { background: #1c4532; color: #68d391; }
+    .badge-not-looking { background: #2d3748; color: #a0aec0; }
 
-    .badge-confirmed {
-      background: rgba(239, 68, 68, 0.12);
-      border: 1px solid rgba(239, 68, 68, 0.25);
-      color: #fc8181;
-      box-shadow: 0 0 10px rgba(239, 68, 68, 0.1);
-    }
-
-    .badge-unconfirmed {
-      background: rgba(245, 158, 11, 0.12);
-      border: 1px solid rgba(245, 158, 11, 0.25);
-      color: #fbd38d;
-    }
-
-    .badge-gaze {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--glass-border);
-      color: var(--text-muted);
-    }
-
-    .no-data {
+    .empty-state {
       text-align: center;
-      padding: 3rem;
-      color: var(--text-muted);
-      font-size: 0.95rem;
+      padding: 40px 16px;
+      color: var(--text-secondary);
+    }
+    .empty-state .icon {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+
+    /* ── Footer ───────────────────────────────────────────────── */
+    footer {
+      padding: 24px;
+      border-top: 1px solid var(--border-color);
+      font-size: 11px;
+      color: var(--text-secondary);
+      text-align: center;
+      background: var(--bg-sidebar);
     }
   </style>
 </head>
 <body>
 
-<div class="container">
-  
-  <!-- Header Banner -->
-  <header>
-    <div class="branding">
-      <div class="logo-mark"></div>
-      <h1>FocusGuard Daily Digest</h1>
-    </div>
-    <div class="date-badge">{{ date }}</div>
-  </header>
-
-  <!-- Metric Summary Cards -->
-  <div class="metrics-grid">
-    <div class="card card-confirmed">
-      <div class="card-title">Confirmed Doomscrolling</div>
-      <div class="card-value">{{ confirmed_duration_mins }} <span>mins</span></div>
-      <div class="card-description">Hands idle & visually focused on distracting tabs</div>
-    </div>
-    
-    <div class="card card-sessions">
-      <div class="card-title font-bold">Total Confirmed Sessions</div>
-      <div class="card-value">{{ confirmed_count }} <span>sessions</span></div>
-      <div class="card-description">Long-form focused distractions detected</div>
-    </div>
-
-    <div class="card card-unconfirmed">
-      <div class="card-title">Unconfirmed (Near Misses)</div>
-      <div class="card-value">{{ unconfirmed_duration_mins }} <span>mins</span></div>
-      <div class="card-description">Hands idle on distracting apps but user looked away</div>
-    </div>
-  </div>
-
-  <!-- Dashboard Main Layout -->
-  <div class="dashboard-layout">
-    
-    <!-- Left: Hourly Distraction Heatmap -->
-    <div class="section-container">
-      <div class="section-title">
-        <span>Distraction Distribution By Hour</span>
-        <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">(Minutes spent doomscrolling)</span>
-      </div>
-      <div class="chart-wrapper">
-        <canvas id="hourlyChart"></canvas>
-      </div>
-    </div>
-
-    <!-- Right: Ranked Top Distractions -->
-    <div class="section-container">
-      <div class="section-title">Top Distracting Sources</div>
-      {% if top_sites %}
-        <div class="site-list">
-          {% set max_dur = top_sites[0].duration_mins if top_sites else 1.0 %}
-          {% for site in top_sites %}
-            {% set pct = (site.duration_mins / max_dur) * 100 if max_dur > 0 else 0 %}
-            <div class="site-row">
-              <div class="site-info">
-                <span class="site-name">{{ site.site }}</span>
-                <span class="site-time">{{ site.duration_mins }}m</span>
-              </div>
-              <div class="progress-bar-bg">
-                <div class="progress-bar-fill" style="width: {{ pct }}%;"></div>
-              </div>
-            </div>
-          {% endfor %}
+  <div class="app-container">
+    <!-- Main Content Workspace -->
+    <div class="workspace">
+      
+      <!-- Header -->
+      <header class="header">
+        <div class="header-left">
+          <h1>FocusGuard Daily Digest</h1>
+          <div class="date-label">{{ date }}</div>
         </div>
-      {% else %}
-        <div class="no-data">No distracting sites or apps logged today.</div>
+        <div class="logo">FG</div>
+      </header>
+      
+      <!-- Top Title -->
+      <div class="header-section">
+        <h1>App Usage (Last 7 Days)</h1>
+      </div>
+
+      <!-- 7-Day Trend Chart Card -->
+      <div class="trend-card">
+        <div class="chart-container">
+          <canvas id="weeklyBarChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Segmented Category Breakdown Bar -->
+      {% if category_breakdown %}
+      <div class="segmented-bar">
+        {% for cat in category_breakdown %}
+        <div class="seg-item" 
+             style="width: {{ cat.percentage }}%; background-color: {{ cat.color }};" 
+             title="{{ cat.category }}: {{ cat.duration_str }} ({{ cat.percentage }}%)">
+          {% if cat.percentage > 8 %}
+            {{ cat.category }}
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
       {% endif %}
+
+      <!-- Lower Two-Column Grid -->
+      <div class="lower-grid">
+        
+        <!-- Left: Donut App Breakdown -->
+        <div class="donut-card">
+          <h3>App Breakdown</h3>
+          <div class="donut-wrap">
+            <canvas id="donutAppChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Right: Today's App Usage Details -->
+        <div class="details-card">
+          <div class="details-header">
+            <div>
+              <div class="total-time-lbl">Total Time Distracted</div>
+              <div class="total-time-val">{{ total_time_str }}</div>
+            </div>
+            
+            <!-- Date navigation controls -->
+            <div class="date-navigation">
+              {% if prev_date %}
+                <a href="digest_{{ prev_date }}.html" class="date-nav-btn" title="Previous Day">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </a>
+              {% else %}
+                <div class="date-nav-btn disabled">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </div>
+              {% endif %}
+
+              <div class="current-date-lbl">{{ date_header }}</div>
+
+              {% if next_date %}
+                <a href="digest_{{ next_date }}.html" class="date-nav-btn" title="Next Day">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </a>
+              {% else %}
+                <div class="date-nav-btn disabled">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- App details listing -->
+          <div class="app-list">
+            {% if app_list %}
+              {% for app in app_list %}
+              <div class="app-row">
+                <div class="app-row-top">
+                  <div class="app-row-left">
+                    <div class="app-icon-wrap">
+                      <!-- Custom rich SVGs per category to look premium -->
+                      {% if app.category == "Work" %}
+                        <!-- Visual Studio style infinity icon -->
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e67e22" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 12c-2-2.67-4-4-6-4a4 4 0 1 0 0 8c2 0 4-1.33 6-4zm0 0c2 2.67 4 4 6 4a4 4 0 1 0 0-8c-2 0-4 1.33-6 4z"/></svg>
+                      {% elif app.category == "Education" %}
+                        <!-- Browser / Web style globe icon -->
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#27ae60" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                      {% elif app.category == "Communication" %}
+                        <!-- Message style chat bubbles -->
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2980b9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                      {% elif app.category == "Utility" %}
+                        <!-- Wrench / Tools style configuration icon -->
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f39c12" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+                      {% elif app.category == "Entertainment" %}
+                        <!-- Video style play button -->
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                      {% elif app.category == "News" %}
+                        <!-- Newspaper style document icon -->
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9b59b6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><path d="M16 8h2"></path><path d="M16 12h2"></path><path d="M16 16h2"></path><path d="M6 8h6v8H6z"></path></svg>
+                      {% else %}
+                        <!-- Generic square layout -->
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#95a5a6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+                      {% endif %}
+                    </div>
+                    <div class="app-name-badge">
+                      <span class="app-display-name" title="{{ app.display_name }}">{{ app.display_name }}</span>
+                      <span class="category-badge" style="background-color: {{ app.category_color }}; color: {{ app.category_text_color }};">
+                        {{ app.category }}
+                      </span>
+                    </div>
+                  </div>
+                  <div class="app-row-right">
+                    <span class="app-duration">{{ app.duration_str }}</span>
+                    <button class="options-btn" title="Options">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="app-progress-container">
+                  <div class="app-progress-fill" style="width: {{ app.pct }}%; background-color: {{ app.category_color }};"></div>
+                </div>
+              </div>
+              {% endfor %}
+            {% else %}
+              <div class="empty-state">
+                <div class="icon">✨</div>
+                <p>No distracting application usage recorded today.</p>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Collapsible Detailed Session Log Section -->
+      <div class="session-log-card">
+        <div class="session-log-header" id="session-log-toggle">
+          <h3>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            Detailed Session Log
+          </h3>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="chevron-icon" style="transition: transform 0.2s;"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
+        <div class="session-log-content" id="session-log-content">
+          {% if sessions %}
+            <table>
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Site / Application</th>
+                  <th>Duration</th>
+                  <th>Tier</th>
+                  <th>Gaze Detection</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for s in sessions %}
+                <tr>
+                  <td>{{ s.time }}</td>
+                  <td>{{ s.site or s.app_name }}</td>
+                  <td>{{ s.duration_mins }} min</td>
+                  <td>
+                    {% if s.tier == "confirmed" %}
+                      <span class="badge badge-confirmed">Confirmed</span>
+                    {% else %}
+                      <span class="badge badge-unconfirmed">Unconfirmed</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if s.gaze_status == "LOOKING" %}
+                      <span class="badge badge-looking">Looking</span>
+                    {% else %}
+                      <span class="badge badge-not-looking">{{ s.gaze_status | replace("_", " ") | title }}</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          {% else %}
+            <div class="empty-state">
+              <div class="icon">🎉</div>
+              <p>No doomscrolling sessions logged today.</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
     </div>
 
   </div>
 
-  <!-- Row 2: Past 7 Days Trendline -->
-  <div class="section-container" style="margin-bottom: 2rem;">
-    <div class="section-title">Weekly Distraction Trend (Last 7 Days)</div>
-    <div class="chart-wrapper" style="height: 250px;">
-      <canvas id="weeklyChart"></canvas>
-    </div>
-  </div>
+  <footer>
+    Generated by FocusGuard &nbsp;•&nbsp; All data is stored locally on your machine
+  </footer>
 
-  <!-- Chronological Table Logs -->
-  <div class="section-container">
-    <div class="section-title">Chronological Log of Distractions</div>
-    {% if sessions %}
-      <div class="log-table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>Start Time</th>
-              <th>Source Domain / Application</th>
-              <th>Window App</th>
-              <th>Duration</th>
-              <th>Detection Tier</th>
-              <th>Gaze Signal</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for session in sessions %}
-              <tr>
-                <td style="font-weight: 500; color: var(--text-main);">{{ session.time }}</td>
-                <td style="font-family: monospace; font-size: 0.85rem; color: var(--color-accent);">{{ session.site }}</td>
-                <td>{{ session.app_name }}</td>
-                <td>{{ session.duration_mins }}m</td>
-                <td>
-                  {% if session.tier == 'confirmed' %}
-                    <span class="badge badge-confirmed">Confirmed</span>
-                  {% else %}
-                    <span class="badge badge-unconfirmed">Unconfirmed</span>
-                  {% endif %}
-                </td>
-                <td>
-                  <span class="badge badge-gaze">{{ session.gaze_status }}</span>
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    {% else %}
-      <div class="no-data" style="padding: 4rem;">
-        <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">🎉 Fully Focused!</div>
-        No distracting sessions recorded today. Keep up the deep work!
-      </div>
-    {% endif %}
-  </div>
+  <!-- ── Chart.js Configurations ───────────────────────────── -->
+  <script>
+    // Custom labels drawing plugin for Chart.js to put values above bars
+    const topLabelsPlugin = {
+      id: 'topLabels',
+      afterDatasetsDraw(chart, args, options) {
+        const { ctx } = chart;
+        ctx.save();
+        ctx.font = '600 11px "Inter", sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        
+        chart.data.datasets.forEach((dataset, i) => {
+          chart.getDatasetMeta(i).data.forEach((bar, index) => {
+            const val = dataset.data[index];
+            const text = val > 0 ? val.toFixed(1) + ' h' : '0.0 h';
+            ctx.fillText(text, bar.x, bar.y - 6);
+          });
+        });
+        ctx.restore();
+      }
+    };
 
-</div>
+    // 1. Weekly App Usage Bar Chart
+    const weeklyData = {{ weekly_trend | tojson }};
+    const weekLabels = weeklyData.map(d => d.day);
+    const weekValues = weeklyData.map(d => d.hours);
 
-<!-- ----------------------------------------------------------------------
-     Interactive Chart rendering (Offline Chart.js Initialization)
-     ---------------------------------------------------------------------- -->
-<script>
-  // Chart.js global configuration overrides for premium dark-mode styling
-  Chart.defaults.color = '#9ca3af';
-  Chart.defaults.font.family = "'Inter', sans-serif";
-
-  // Data from Jinja2
-  const hourlyData = {{ hourly_buckets | tojson }};
-  const weeklyRaw = {{ weekly_trend | tojson }};
-
-  // 1. Hourly Heatmap Chart
-  const ctxHourly = document.getElementById('hourlyChart').getContext('2d');
-  
-  // Hours labels: ["12 AM", "1 AM", ... "11 PM"]
-  const hourLabels = Array.from({ length: 24 }, (_, i) => {
-    const ampm = i >= 12 ? 'PM' : 'AM';
-    const displayHour = i % 12 === 0 ? 12 : i % 12;
-    return `${displayHour} ${ampm}`;
-  });
-
-  const hourlyChart = new Chart(ctxHourly, {
-    type: 'bar',
-    data: {
-      labels: hourLabels,
-      datasets: [{
-        label: 'Minutes Doomscrolling',
-        data: hourlyData,
-        backgroundColor: 'rgba(239, 68, 68, 0.4)',
-        borderColor: 'rgba(239, 68, 68, 0.85)',
-        borderWidth: 1.5,
-        borderRadius: 4,
-        hoverBackgroundColor: 'rgba(239, 68, 68, 0.75)',
-        hoverBorderColor: '#ef4444'
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false }
+    new Chart(document.getElementById("weeklyBarChart"), {
+      type: "bar",
+      data: {
+        labels: weekLabels,
+        datasets: [{
+          data: weekValues,
+          backgroundColor: "#00adb5",
+          hoverBackgroundColor: "#00c4cc",
+          borderRadius: 4,
+          borderWidth: 0,
+          barThickness: 28,
+        }]
       },
-      scales: {
-        x: {
-          grid: { display: false }
+      plugins: [topLabelsPlugin],
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#0c0d12',
+            titleColor: '#ffffff',
+            bodyColor: '#8e929d',
+            borderColor: '#1a1e24',
+            borderWidth: 1,
+            displayColors: false,
+            callbacks: {
+              label: function(context) {
+                return context.parsed.y + ' hours distraction';
+              }
+            }
+          }
         },
-        y: {
-          beginAtZero: true,
-          grid: { color: 'rgba(255, 255, 255, 0.05)' },
-          title: { display: true, text: 'Minutes' }
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: {
+              color: '#8e929d',
+              font: { family: 'Inter', size: 11, weight: '500' }
+            }
+          },
+          y: {
+            grid: { color: '#14171f' },
+            beginAtZero: true,
+            max: Math.max(3.0, ...weekValues) + 0.5,
+            ticks: {
+              stepSize: 1.0,
+              color: '#8e929d',
+              font: { family: 'Inter', size: 10 },
+              callback: function(value) {
+                return value.toFixed(1) + ' h';
+              }
+            },
+            title: {
+              display: true,
+              text: 'Hours',
+              color: '#8e929d',
+              font: { family: 'Inter', size: 11, weight: '600' }
+            }
+          }
         }
       }
-    }
-  });
+    });
 
-  // 2. Weekly Trend Line Chart
-  const ctxWeekly = document.getElementById('weeklyChart').getContext('2d');
-  
-  // Format labels from "YYYY-MM-DD" to "MMM DD" (e.g. "Jun 01")
-  const weeklyLabels = weeklyRaw.map(item => {
-    try {
-      const parts = item.date.split('-');
-      const d = new Date(parts[0], parts[1] - 1, parts[2]);
-      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    } catch {
-      return item.date;
-    }
-  });
-  const weeklyValues = weeklyRaw.map(item => item.confirmed_duration_mins);
+    // 2. Today's App Breakdown Donut Chart
+    const donutLabels = {{ donut_labels | tojson }};
+    const donutData = {{ donut_data | tojson }};
+    const donutColors = {{ donut_colors | tojson }};
 
-  const weeklyChart = new Chart(ctxWeekly, {
-    type: 'line',
-    data: {
-      labels: weeklyLabels,
-      datasets: [{
-        label: 'Doomscrolling Time',
-        data: weeklyValues,
-        borderColor: 'rgba(59, 130, 246, 0.85)',
-        backgroundColor: 'rgba(59, 130, 246, 0.08)',
-        fill: true,
-        tension: 0.35,
-        borderWidth: 3,
-        pointBackgroundColor: '#3b82f6',
-        pointBorderColor: '#ffffff',
-        pointBorderWidth: 2,
-        pointRadius: 5,
-        pointHoverRadius: 7
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false }
-      },
-      scales: {
-        x: {
-          grid: { display: false }
+    if (donutData.length > 0) {
+      new Chart(document.getElementById("donutAppChart"), {
+        type: "doughnut",
+        data: {
+          labels: donutLabels,
+          datasets: [{
+            data: donutData,
+            backgroundColor: donutColors,
+            borderColor: 'transparent',
+            hoverOffset: 4
+          }]
         },
-        y: {
-          beginAtZero: true,
-          grid: { color: 'rgba(255, 255, 255, 0.05)' },
-          title: { display: true, text: 'Minutes' }
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '76%',
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                color: '#8e929d',
+                font: { family: 'Inter', size: 11 },
+                padding: 14,
+                boxWidth: 10,
+                boxHeight: 10,
+                usePointStyle: true
+              }
+            },
+            tooltip: {
+              backgroundColor: '#0c0d12',
+              borderColor: '#1a1e24',
+              borderWidth: 1,
+              callbacks: {
+                label: function(context) {
+                  return ' ' + context.label + ': ' + context.parsed + ' min';
+                }
+              }
+            }
+          }
         }
-      }
+      });
+    } else {
+      // Empty donut placeholder
+      document.querySelector('.donut-wrap').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#8e929d;">No Data</div>';
     }
-  });
-</script>
 
+    // 3. Collapsible Session Log Toggle
+    const logToggle = document.getElementById('session-log-toggle');
+    const logContent = document.getElementById('session-log-content');
+    const chevronIcon = document.getElementById('chevron-icon');
+
+    logToggle.addEventListener('click', () => {
+      const isOpen = logContent.classList.toggle('open');
+      logToggle.classList.toggle('open', isOpen);
+      chevronIcon.style.transform = isOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+    });
+
+
+  </script>
 </body>
 </html>

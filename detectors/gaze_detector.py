@@ -64,8 +64,9 @@ _RIGHT_EYE = [33,  160, 158, 133, 153, 144]
 _LEFT_IRIS  = [474, 475, 476, 477]
 _RIGHT_IRIS = [469, 470, 471, 472]
 
-_EAR_CLOSED_THRESHOLD  = 0.20   # below → eyes closed
-_IRIS_OFFSET_THRESHOLD = 0.40   # above → looking sideways
+_EAR_CLOSED_THRESHOLD_DEFAULT = 0.20   # below → eyes closed
+_IRIS_OFFSET_THRESHOLD_DEFAULT = 0.40   # above → looking sideways
+_GAZE_STABLE_FRAMES_DEFAULT = 2
 
 
 # ---------------------------------------------------------------------------
@@ -74,6 +75,20 @@ _IRIS_OFFSET_THRESHOLD = 0.40   # above → looking sideways
 
 def _dist(p1, p2) -> float:
     return math.sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
+
+
+def _float_config(config: dict, key: str, default: float) -> float:
+    try:
+        return float(config.get(key, default))
+    except (TypeError, ValueError):
+        return default
+
+
+def _int_config(config: dict, key: str, default: int, minimum: int = 1) -> int:
+    try:
+        return max(int(config.get(key, default)), minimum)
+    except (TypeError, ValueError):
+        return max(default, minimum)
 
 
 def _ear(landmarks, indices: list[int], w: int, h: int) -> float:
@@ -94,16 +109,23 @@ def _iris_offset(landmarks, eye_idx: list[int], iris_idx: list[int],
     return abs(iris_cx - eye_cx) / eye_w if eye_w > 0 else 0.0
 
 
-def _classify(landmarks, w: int, h: int) -> GazeSignal:
+def _classify_with_thresholds(
+    landmarks,
+    w: int,
+    h: int,
+    *,
+    ear_closed_threshold: float,
+    iris_offset_threshold: float,
+) -> GazeSignal:
     left_ear  = _ear(landmarks, _LEFT_EYE,  w, h)
     right_ear = _ear(landmarks, _RIGHT_EYE, w, h)
-    if (left_ear + right_ear) / 2.0 < _EAR_CLOSED_THRESHOLD:
+    if (left_ear + right_ear) / 2.0 < ear_closed_threshold:
         return GazeSignal.NOT_LOOKING
 
     if len(landmarks) > 477:
         lo = _iris_offset(landmarks, _LEFT_EYE,  _LEFT_IRIS,  w, h)
         ro = _iris_offset(landmarks, _RIGHT_EYE, _RIGHT_IRIS, w, h)
-        if (lo + ro) / 2.0 > _IRIS_OFFSET_THRESHOLD:
+        if (lo + ro) / 2.0 > iris_offset_threshold:
             return GazeSignal.NOT_LOOKING
 
     return GazeSignal.LOOKING
@@ -139,6 +161,8 @@ class GazeDetector:
         self._last_signal: Optional[GazeSignal] = None
         self._last_emit   = 0.0
         self._webcam_ok   = False
+        self._pending_signal: Optional[GazeSignal] = None
+        self._pending_streak = 0
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -185,6 +209,11 @@ class GazeDetector:
             return
 
         try:
+            # Suppress MediaPipe C++ stderr noise before import
+            import os as _os
+            _os.environ.setdefault("GLOG_minloglevel", "3")
+            _os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "3")
+
             import mediapipe as mp
             from mediapipe.tasks.python import vision as mp_vision
             from mediapipe.tasks.python.core import base_options as mp_base
@@ -287,14 +316,47 @@ class GazeDetector:
 
                 if detection.face_landmarks:
                     lm     = detection.face_landmarks[0]
-                    signal = _classify(lm, w, h)
+                    signal = _classify_with_thresholds(
+                        lm,
+                        w,
+                        h,
+                        ear_closed_threshold=_float_config(
+                            self._config,
+                            "gaze_ear_closed_threshold",
+                            _EAR_CLOSED_THRESHOLD_DEFAULT,
+                        ),
+                        iris_offset_threshold=_float_config(
+                            self._config,
+                            "gaze_iris_offset_threshold",
+                            _IRIS_OFFSET_THRESHOLD_DEFAULT,
+                        ),
+                    )
                 else:
                     signal = GazeSignal.NOT_LOOKING
+
+                stable_frames = _int_config(
+                    self._config,
+                    "gaze_stable_frames",
+                    _GAZE_STABLE_FRAMES_DEFAULT,
+                )
+                if signal == self._pending_signal:
+                    self._pending_streak += 1
+                else:
+                    self._pending_signal = signal
+                    self._pending_streak = 1
 
                 # Emit at configured interval or on state change
                 now    = time.monotonic()
                 period = self._config.get("gaze_poll_interval_seconds", 3)
-                if signal != self._last_signal or now - self._last_emit >= period:
+                should_emit = False
+                if self._last_signal is None:
+                    should_emit = self._pending_streak >= stable_frames
+                elif signal == self._last_signal:
+                    should_emit = now - self._last_emit >= period
+                elif self._pending_streak >= stable_frames:
+                    should_emit = True
+
+                if should_emit:
                     self._session_manager.on_gaze_signal(signal)
                     self._last_signal = signal
                     self._last_emit   = now

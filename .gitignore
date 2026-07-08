@@ -1,33 +1,9 @@
-# Runtime data (db, logs, reports) — generated locally, never committed
-data/
-
-# Virtual environment
 venv/
-
-# Python bytecode
+data/focusguard.db
+data/focusguard.log
+data/reports/
 __pycache__/
 *.pyc
 *.pyo
-
-# User data (generated at runtime, never committed)
-*.db
-*.log
-reports/
-
-# Config overrides (user's live config lives in %APPDATA%, not here)
-# Keep the default config.json in the repo
-
-# OS
-.DS_Store
-Thumbs.db
-
-# PyInstaller output
-dist/
-build/
-*.spec
-
-# Kiro workspace files
-.kiro/
-
-# Test / dev scripts
-test_gaze.py
+.env
+data/models/
